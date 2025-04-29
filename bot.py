@@ -178,6 +178,10 @@ async def process_rename(client, message):
 
 async def send_with_progress(client, msg, filename=None):
     media = msg.document or msg.video
+    if media.file_name is None:
+        await msg.reply("❌ Ce fichier ne contient pas de nom valide.")
+        return
+
     original_ext = os.path.splitext(media.file_name)[1]
     name_to_send = filename if filename else media.file_name
     if not name_to_send.endswith(original_ext):
@@ -202,15 +206,15 @@ async def send_with_progress(client, msg, filename=None):
     if msg.video:
         await send_func(
             chat_id=msg.chat.id,
-            video=path,
+            video=path,  # Utilisez send_video pour les vidéos
             file_name=name_to_send,
             thumb=CURRENT_THUMB,
             progress=download_progress
         )
-    elif msg.document:
+    else:
         await send_func(
             chat_id=msg.chat.id,
-            document=path,
+            document=path,  # Utilisez send_document pour les documents
             file_name=name_to_send,
             thumb=CURRENT_THUMB,
             progress=download_progress
@@ -220,19 +224,10 @@ async def send_with_progress(client, msg, filename=None):
     os.remove(path)
 
 async def process_files(client, message):
-    """Processing multiple files in sequence"""
-    global RECEIVED_FILES  # Ajoutez cette ligne pour accéder à la variable globale
-    for idx, msg in enumerate(RECEIVED_FILES):
-        file_name = RENAME_INFO['template'].replace("{1}", str(RENAME_INFO["ep"]))
-        await send_with_progress(client, msg, file_name)
-        RENAME_INFO["ep"] += 1
-    RECEIVED_FILES = []  # Réinitialisation de la liste après traitement
-
-async def process_file(client, message, file, manual=False):
-    """Process a single file with renaming"""
-    if manual:
+    """Processing multiple files in sequence."""
+    for file in RECEIVED_FILES:
         await send_with_progress(client, file)
-
+        
 # Exécution de l'application (la boucle principale)
 if __name__ == "__main__":
     app.run()
